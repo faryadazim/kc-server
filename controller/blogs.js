@@ -13,35 +13,17 @@ cloudinary.config({
 export const postblog = async (req, res) => {
   try {
     const {
-      blog_name,
-      post_name,
-      gender,
-      department,
-      company_name,
-      tags,
-      age_limit,
-      apply_procedure,
-      is_apply_link,
-      apply_link,
-      is_form_available,
-      form_availableLink,
-      domicile,
-      vacancies,
-      last_date,
-      join_whatsapp_group,
-      description_1,
-      description_2,
-      is_how_to_apply,
-      how_to_apply,
-      location1,
-      location2,
-      salary,
-      type,
-      education,
-      procedure,
-      category,
+      blog_title,
+      author,
+      blog_intro,
+      blog_body,
+      blog_category,
+      blog_tags,
+      slug,
+      publish_date,
     } = req.body;
-    const imagesUrls = {}; // Initialize an object to store image URLs
+
+    let blog_image = "";
 
     const options = {
       use_filename: true,
@@ -49,92 +31,69 @@ export const postblog = async (req, res) => {
       overwrite: true,
     };
 
-    // Loop through the images in req.files
-    for (let i = 1; i <= 10; i++) {
-      const fileKey = `image${i}`;
-      const fileKeyStore = `image_${i}`;
-
-      if (req.files && req.files[fileKey]) {
-        const image = req.files[fileKey];
-        const { url } = await uploader.upload(image.tempFilePath, options);
-        imagesUrls[fileKeyStore] = url;
-      }
+    if (req.files && req.files.image) {
+      const image = req.files.image;
+      const { url } = await uploader.upload(image.tempFilePath, options);
+      blog_image = url;
     }
 
-    const blogType = capitalizeFirstLetter(type);
+    const slugGenerated = slug || await generateUniqueSlug(blog_title);
 
-    var last_date_ = parseDateString(last_date);
     const blogModel = new blog({
-      blog_name,
-      post_name,
-      gender,
-      department,
-      company_name,
-      tags,
-      age_limit,
-      apply_procedure,
-      is_apply_link,
-      apply_link,
-      is_form_available,
-      form_availableLink,
-      domicile,
-      vacancies,
-      last_date: last_date_,
-      join_whatsapp_group,
-      description_1,
-      description_2,
-      is_how_to_apply,
-      how_to_apply,
-      ...imagesUrls, // Spread the imagesUrls object to include all image URLs
-      location1,
-      location2,
-      salary,
-      blogType,
-      education,
-      procedure,
-      category,
-      slug: await generateUniqueSlug(blog_name),
+      blog_title,
+      author,
+      blog_intro,
+      blog_body,
+      blog_category,
+      blog_tags,
+      slug: slugGenerated,
+      publish_date,
+      blog_image,
+      created_at: new Date(),
     });
 
     await blogModel.save();
     res.status(200).json({ message: "Post successfully" });
   } catch (error) {
+    console.error(error);
     res.status(400).json({ message: "Something went wrong" });
   }
 };
+
 export const getblogs = async (req, res) => {
   try {
-    const { size, page, type, category = "-1", search = "-1" } = req.query;
+    const { size = 10, page = 1, category = "-1", search = "-1" } = req.query;
 
     let query = {};
-    if (category !== "-1") query.department = category;
-    if (type !== "All") query.type = type;
+    if (category !== "-1") query.blog_category = category;
 
     if (search !== "-1") {
       query.$or = [
-        { blog_name: { $regex: search, $options: "i" } },
-        { post_name: { $regex: search, $options: "i" } },
-        { department: { $regex: search, $options: "i" } },
+        { blog_title: { $regex: search, $options: "i" } },
+        { author: { $regex: search, $options: "i" } },
+        { blog_intro: { $regex: search, $options: "i" } },
       ];
     }
 
     const blogs = await blog
       .find(query)
-      .select("blog_name type last_date department location1 location2 salary slug")
-      .sort({ createdAt: -1 })
+      .select("blog_title blog_intro blog_category blog_image slug")
+      .sort({ created_at: -1 })
       .skip((page - 1) * size)
-      .limit(size);
+      .limit(parseInt(size));
     const total_record = await blog.countDocuments(query);
 
     res.status(200).json({ data: blogs, total_record });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+
 export const getAllblogs = async (req, res) => {
   try {
-    const blogs = await blog.find().select("blog_name type last_date department");
+    const blogs = await blog.find().select("blog_title author blog_category");
 
     res.status(200).json(blogs);
   } catch (error) {
@@ -146,8 +105,8 @@ export const getLatestblogs = async (req, res) => {
   try {
     const blogs = await blog
       .find()
-      .select("blog_name last_date slug")
-      .sort({ createdAt: -1 })
+      .select("blog_title blog_intro slug")
+      .sort({ created_at: -1 })
       .skip(0)
       .limit(12);
 
@@ -167,14 +126,15 @@ export const getblogById = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 export const getblogBySlug = async (req, res) => {
   try {
     const slug = req.params.slug;
-    const _blog = await blog.findOne({ slug: slug });
+    const _blog = await blog.findOne({ slug });
     if (!_blog) return res.status(404).json({ message: "Not found" });
     res.status(200).json({ message: "Success", payload: _blog });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -184,7 +144,7 @@ export const deleteblogs = async (req, res) => {
     const id = req.params.id;
     const result = await blog.deleteOne({ _id: id });
     if (result.deletedCount === 1) {
-      res.status(200).json({ message: "blog deleted" });
+      res.status(200).json({ message: "Blog deleted" });
     } else {
       res.status(404).json({ message: "Not found" });
     }
@@ -193,9 +153,10 @@ export const deleteblogs = async (req, res) => {
   }
 };
 
-export const generateUniqueSlug = async (blogName) => {
-  let slug = slugify(blogName, { lower: true, strict: true });
-  let blogWithSameSlug = await blog.findOne({ slug: slug });
+
+export const generateUniqueSlug = async (blogTitle) => {
+  let slug = slugify(blogTitle, { lower: true, strict: true });
+  let blogWithSameSlug = await blog.findOne({ slug });
   let uniqueSlug = slug;
 
   while (blogWithSameSlug) {
@@ -205,3 +166,4 @@ export const generateUniqueSlug = async (blogName) => {
 
   return uniqueSlug;
 };
+

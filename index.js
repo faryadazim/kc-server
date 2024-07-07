@@ -2,8 +2,10 @@ import mongoose from "mongoose";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import jobRoutes from "./routes/job.js";
-import userRoutes from "./routes/UserRoutes.js";
+import jobRoutes from "./router/job.js";
+import contactRoutes from "./router/contact.js";
+import subscriptionRoutes from "./router/subscription.js";
+import userRoutes from "./router/UserRoutes.js";
 import { db_con } from "./constants.js";
 import fileUpload from 'express-fileupload';
 
@@ -23,6 +25,8 @@ app.get("/", (req, res) => {
 });
 app.use("/blogs", jobRoutes);
 app.use("/user", userRoutes);
+app.use("/contacts", contactRoutes);
+app.use("/subscriptions", subscriptionRoutes);
 
 // Database connection and server startup
 mongoose.connect(db_con)
