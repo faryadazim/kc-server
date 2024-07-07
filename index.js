@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import jobRoutes from "./router/job.js";
+import blogRoutes from "./router/blogs.js";
 import contactRoutes from "./router/contact.js";
 import subscriptionRoutes from "./router/subscription.js";
 import userRoutes from "./router/UserRoutes.js";
@@ -23,7 +23,7 @@ app.use(fileUpload({ useTempFiles: true, tempFileDir: '/tmp/' }));
 app.get("/", (req, res) => {
   return res.send("Working");
 });
-app.use("/blogs", jobRoutes);
+app.use("/blogs", blogRoutes);
 app.use("/user", userRoutes);
 app.use("/contacts", contactRoutes);
 app.use("/subscriptions", subscriptionRoutes);
