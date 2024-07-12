@@ -19,8 +19,8 @@ export const postblog = async (req, res) => {
       blog_body,
       blog_category,
       blog_tags,
-      slug,
       publish_date,
+      is_featured,
     } = req.body;
 
     let blog_image = "";
@@ -37,7 +37,7 @@ export const postblog = async (req, res) => {
       blog_image = url;
     }
 
-    const slugGenerated = slug || await generateUniqueSlug(blog_title);
+    const slugGenerated = await generateUniqueSlug(blog_title);
 
     const blogModel = new blog({
       blog_title,
@@ -49,6 +49,7 @@ export const postblog = async (req, res) => {
       slug: slugGenerated,
       publish_date,
       blog_image,
+      is_featured,
       created_at: new Date(),
     });
 
@@ -77,7 +78,9 @@ export const getblogs = async (req, res) => {
 
     const blogs = await blog
       .find(query)
-      .select("blog_title blog_intro blog_category blog_image slug")
+      .select(
+        "blog_title blog_intro blog_category blog_image slug blog_tags author publish_date is_featured"
+      )
       .sort({ created_at: -1 })
       .skip((page - 1) * size)
       .limit(parseInt(size));
@@ -90,13 +93,30 @@ export const getblogs = async (req, res) => {
   }
 };
 
-
 export const getAllblogs = async (req, res) => {
   try {
-    const blogs = await blog.find().select("blog_title author blog_category");
+    const blogs = await blog
+      .find()
+      .select("blog_title author blog_category blog_image slug  publish_date is_featured")
+      .sort({ created_at: -1 });
 
     res.status(200).json(blogs);
   } catch (error) {
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getFeturedBlogs = async (req, res) => {
+  try {
+    const blogs = await blog
+    .find({ is_featured: true })
+    .select("blog_title author blog_category blog_image slug publish_date is_featured")
+    .sort({ created_at: -1 })
+    .limit(5);
+
+    res.status(200).json(blogs);
+  } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -105,7 +125,7 @@ export const getLatestblogs = async (req, res) => {
   try {
     const blogs = await blog
       .find()
-      .select("blog_title blog_intro slug")
+      .select("blog_title blog_intro slug ")
       .sort({ created_at: -1 })
       .skip(0)
       .limit(12);
@@ -154,6 +174,7 @@ export const deleteblogs = async (req, res) => {
 };
 
 
+
 export const generateUniqueSlug = async (blogTitle) => {
   let slug = slugify(blogTitle, { lower: true, strict: true });
   let blogWithSameSlug = await blog.findOne({ slug });
@@ -166,4 +187,5 @@ export const generateUniqueSlug = async (blogTitle) => {
 
   return uniqueSlug;
 };
+
 

@@ -7,7 +7,8 @@ const blogSchema = mongoose.Schema({
   blog_body: { type: String, required: false },
   blog_image: { type: String, required: false },
   blog_category: { type: String, required: false },
-  blog_tags: { type: Array, required: false },
+  blog_tags: { type: String, required: false },
+  blog_is_featured: { type: Boolean, default: false },
   slug: String,
   publish_date: { type: Date, default: new Date() },
   created_at: {
