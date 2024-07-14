@@ -10,6 +10,7 @@ const blogSchema = mongoose.Schema({
   blog_tags: { type: String, required: false },
   blog_is_featured: { type: Boolean, default: false },
   slug: String,
+  read_time: String,
   publish_date: { type: Date, default: new Date() },
   created_at: {
     type: Date,

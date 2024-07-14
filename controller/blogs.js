@@ -1,7 +1,11 @@
 import blog from "../models/blog.js";
 import { v2 as cloudinary, uploader } from "cloudinary";
 
-import { capitalizeFirstLetter, parseDateString } from "../utility.js";
+import {
+  calculateAverageReadTime,
+  capitalizeFirstLetter,
+  parseDateString,
+} from "../utility.js";
 import slugify from "slugify";
 
 cloudinary.config({
@@ -36,7 +40,7 @@ export const postblog = async (req, res) => {
       const { url } = await uploader.upload(image.tempFilePath, options);
       blog_image = url;
     }
-
+    const readTime = calculateAverageReadTime(blog_body + blog_intro);
     const slugGenerated = await generateUniqueSlug(blog_title);
 
     const blogModel = new blog({
@@ -49,7 +53,8 @@ export const postblog = async (req, res) => {
       slug: slugGenerated,
       publish_date,
       blog_image,
-      blog_is_featured:is_featured,
+      read_time: `${readTime} min read`,
+      blog_is_featured: is_featured,
       created_at: new Date(),
     });
 
@@ -79,7 +84,7 @@ export const getblogs = async (req, res) => {
     const blogs = await blog
       .find(query)
       .select(
-        "blog_title blog_intro blog_category blog_image slug blog_tags author publish_date blog_is_featured"
+        "blog_title blog_intro blog_category blog_image slug blog_tags author publish_date blog_is_featured read_time"
       )
       .sort({ created_at: -1 })
       .skip((page - 1) * size)
@@ -97,7 +102,9 @@ export const getAllblogs = async (req, res) => {
   try {
     const blogs = await blog
       .find()
-      .select("blog_title author blog_category blog_image slug  publish_date blog_is_featured")
+      .select(
+        "blog_title author blog_category blog_image slug  publish_date blog_is_featured read_time"
+      )
       .sort({ created_at: -1 });
 
     res.status(200).json(blogs);
@@ -109,10 +116,12 @@ export const getAllblogs = async (req, res) => {
 export const getFeturedBlogs = async (req, res) => {
   try {
     const blogs = await blog
-    .find({ blog_is_featured: true })
-    .select("blog_title blog_intro author blog_category blog_image slug publish_date blog_is_featured")
-    .sort({ created_at: -1 })
-    .limit(4);
+      .find({ blog_is_featured: true })
+      .select(
+        "blog_title blog_intro author   blog_tags  blog_category blog_image slug publish_date blog_is_featured read_time"
+      )
+      .sort({ created_at: -1 })
+      .limit(4);
 
     res.status(200).json(blogs);
   } catch (error) {
@@ -128,7 +137,7 @@ export const updateBlogFeatureStatusyId = async (req, res) => {
     const blogPost = await blog.findById(id);
 
     if (!blogPost) {
-      return res.status(404).json({ message: 'Blog post not found' });
+      return res.status(404).json({ message: "Blog post not found" });
     }
 
     // Toggle the status
@@ -137,10 +146,13 @@ export const updateBlogFeatureStatusyId = async (req, res) => {
     // Save the updated blog post
     await blogPost.save();
 
-    res.status(200).json({ message: 'Blog post status updated', status: blogPost.blog_is_featured });
+    res.status(200).json({
+      message: "Blog post status updated",
+      status: blogPost.blog_is_featured,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -148,7 +160,7 @@ export const getLatestblogs = async (req, res) => {
   try {
     const blogs = await blog
       .find()
-      .select("blog_title blog_intro slug ")
+      .select("blog_title blog_intro slug read_time")
       .sort({ created_at: -1 })
       .skip(0)
       .limit(12);
@@ -196,8 +208,6 @@ export const deleteblogs = async (req, res) => {
   }
 };
 
-
-
 export const generateUniqueSlug = async (blogTitle) => {
   let slug = slugify(blogTitle, { lower: true, strict: true });
   let blogWithSameSlug = await blog.findOne({ slug });
@@ -210,5 +220,3 @@ export const generateUniqueSlug = async (blogTitle) => {
 
   return uniqueSlug;
 };
-
-
