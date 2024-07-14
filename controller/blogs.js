@@ -110,7 +110,7 @@ export const getFeturedBlogs = async (req, res) => {
   try {
     const blogs = await blog
     .find({ blog_is_featured: true })
-    .select("blog_title author blog_category blog_image slug publish_date blog_is_featured")
+    .select("blog_title blog_intro author blog_category blog_image slug publish_date blog_is_featured")
     .sort({ created_at: -1 })
     .limit(4);
 
