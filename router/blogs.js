@@ -8,6 +8,7 @@ const router = express.Router();
 router.post("/",  postblog);
 router.get("/", getblogs);
 router.get("/getAllblogs", getAllblogs);
+router.get("/getBlogs", getblogs);
 router.get("/getLatestblogs", getLatestblogs);
 router.get("/getFeaturedblogs", getFeturedBlogs);
 router.get("/:id", getblogById); 
