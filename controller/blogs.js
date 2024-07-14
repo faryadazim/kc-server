@@ -49,7 +49,7 @@ export const postblog = async (req, res) => {
       slug: slugGenerated,
       publish_date,
       blog_image,
-      is_featured,
+      blog_is_featured:is_featured,
       created_at: new Date(),
     });
 
@@ -64,7 +64,7 @@ export const getblogs = async (req, res) => {
   try {
     const { size = 5, page = 1, category = "-1", search = "-1" } = req.query;
 
-    let query = { is_featured: false }; // Ensure status is true
+    let query = { blog_is_featured: false }; // Ensure status is true
 
     if (category !== "-1") query.blog_category = category;
 
@@ -79,7 +79,7 @@ export const getblogs = async (req, res) => {
     const blogs = await blog
       .find(query)
       .select(
-        "blog_title blog_intro blog_category blog_image slug blog_tags author publish_date is_featured"
+        "blog_title blog_intro blog_category blog_image slug blog_tags author publish_date blog_is_featured"
       )
       .sort({ created_at: -1 })
       .skip((page - 1) * size)
@@ -97,7 +97,7 @@ export const getAllblogs = async (req, res) => {
   try {
     const blogs = await blog
       .find()
-      .select("blog_title author blog_category blog_image slug  publish_date is_featured")
+      .select("blog_title author blog_category blog_image slug  publish_date blog_is_featured")
       .sort({ created_at: -1 });
 
     res.status(200).json(blogs);
@@ -109,8 +109,8 @@ export const getAllblogs = async (req, res) => {
 export const getFeturedBlogs = async (req, res) => {
   try {
     const blogs = await blog
-    .find({ is_featured: true })
-    .select("blog_title author blog_category blog_image slug publish_date is_featured")
+    .find({ blog_is_featured: true })
+    .select("blog_title author blog_category blog_image slug publish_date blog_is_featured")
     .sort({ created_at: -1 })
     .limit(4);
 
@@ -122,12 +122,25 @@ export const getFeturedBlogs = async (req, res) => {
 };
 export const updateBlogFeatureStatusyId = async (req, res) => {
   try {
-     
+    const { id } = req.params;
 
-    res.status(200).json("success");
+    // Find the blog post by ID
+    const blogPost = await blog.findById(id);
+
+    if (!blogPost) {
+      return res.status(404).json({ message: 'Blog post not found' });
+    }
+
+    // Toggle the status
+    blogPost.blog_is_featured = !blogPost.blog_is_featured;
+
+    // Save the updated blog post
+    await blogPost.save();
+
+    res.status(200).json({ message: 'Blog post status updated', status: blogPost.blog_is_featured });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
