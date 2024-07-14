@@ -60,12 +60,12 @@ export const postblog = async (req, res) => {
     res.status(400).json({ message: "Something went wrong" });
   }
 };
-
 export const getblogs = async (req, res) => {
   try {
-    const { size = 10, page = 1, category = "-1", search = "-1" } = req.query;
+    const { size = 5, page = 1, category = "-1", search = "-1" } = req.query;
 
-    let query = {};
+    let query = { is_featured: false }; // Ensure status is true
+
     if (category !== "-1") query.blog_category = category;
 
     if (search !== "-1") {
@@ -112,9 +112,19 @@ export const getFeturedBlogs = async (req, res) => {
     .find({ is_featured: true })
     .select("blog_title author blog_category blog_image slug publish_date is_featured")
     .sort({ created_at: -1 })
-    .limit(5);
+    .limit(4);
 
     res.status(200).json(blogs);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+export const updateBlogFeatureStatusyId = async (req, res) => {
+  try {
+     
+
+    res.status(200).json("success");
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
